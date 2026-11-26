@@ -3,6 +3,7 @@ name: Build Backup Rig
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', 'README.md']
     tags: ['v*']
   workflow_dispatch:
 
