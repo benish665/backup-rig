@@ -16,7 +16,7 @@ jobs:
             os: windows-latest
             config: -A x64
           - name: macOS
-            os: macos-14
+            os: macos-latest
             config: -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
           - name: Linux
             os: ubuntu-22.04
@@ -60,7 +60,7 @@ jobs:
           path: out
 
   release:
-    if: github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
     needs: build
     runs-on: ubuntu-latest
     permissions:
