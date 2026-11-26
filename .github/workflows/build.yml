@@ -60,12 +60,13 @@ jobs:
           path: out
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: art
@@ -76,7 +77,12 @@ jobs:
           cd art
           for d in */; do d=${d%/}; (cd "$d" && zip -qry "../$d.zip" .); done
           ls -la
-          gh release create "$GITHUB_REF_NAME" *.zip --repo "$GITHUB_REPOSITORY" --title "Backup Rig $GITHUB_REF_NAME" --notes-file - <<'NOTES'
+          V=v$(grep -oP 'project\(BackupRig VERSION \K[0-9.]+' ../CMakeLists.txt 2>/dev/null || echo 1.0.0)
+          if gh release view "$V" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$V" *.zip --clobber --repo "$GITHUB_REPOSITORY"
+            exit 0
+          fi
+          gh release create "$V" *.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Backup Rig $V" --notes-file - <<'NOTES'
           ## ריג גיבוי: פלאגין גיטרה (VST3 / AU / אפליקציה עצמאית)
 
           מורידים את הקובץ שמתאים למחשב שלכם מהרשימה למטה (Assets):
