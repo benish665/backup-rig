@@ -2,6 +2,8 @@ name: Build Backup Rig
 
 on:
   push:
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 jobs:
@@ -56,3 +58,31 @@ jobs:
         with:
           name: BackupRig-${{ matrix.name }}
           path: out
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+      - name: Zip and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd art
+          for d in */; do d=${d%/}; (cd "$d" && zip -qry "../$d.zip" .); done
+          ls -la
+          gh release create "$GITHUB_REF_NAME" *.zip --repo "$GITHUB_REPOSITORY" --title "Backup Rig $GITHUB_REF_NAME" --notes-file - <<'NOTES'
+          ## ריג גיבוי: פלאגין גיטרה (VST3 / AU / אפליקציה עצמאית)
+
+          מורידים את הקובץ שמתאים למחשב שלכם מהרשימה למטה (Assets):
+          - **BackupRig-Windows.zip**: מעתיקים את `Backup Rig.vst3` ל-`C:\Program Files\Common Files\VST3\`. את `Backup Rig.exe` אפשר להפעיל בלי DAW: ב-Options > Audio/MIDI Settings בוחרים ASIO ובאפר 64 או 128. אם Windows מציג אזהרה: More info ואז Run anyway.
+          - **BackupRig-macOS.zip**: את `Backup Rig.vst3` מעתיקים ל-`~/Library/Audio/Plug-Ins/VST3/`, ואת `Backup Rig.component` ל-`~/Library/Audio/Plug-Ins/Components/`. הקבצים לא חתומים, אז בפעם הראשונה מריצים בטרמינל `xattr -cr` על הקבצים.
+          - **BackupRig-Linux.zip**: מעתיקים את `Backup Rig.vst3` ל-`~/.vst3/`.
+
+          ארבעה ריגים: CLEAN, SKY, PLEXI ו-LEAD, עם טיונר, נויז גייט וכיול כניסה.
+          NOTES
